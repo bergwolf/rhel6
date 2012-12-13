@@ -61,9 +61,9 @@ config FUSION_SAS
 	  LSISAS1078
 
 config FUSION_MAX_SGE
-	int "Maximum number of scatter gather entries (16 - 128)"
-	default "128"
-	range 16 128
+	int "Maximum number of scatter gather entries (16 - 256)"
+	default "256"
+	range 16 256
 	help
 	  This option allows you to specify the maximum number of scatter-
 	  gather entries per I/O. The driver default is 128, which matches

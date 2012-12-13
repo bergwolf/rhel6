@@ -213,6 +213,7 @@ d_automount:	no		no		no	 yes
 #define DCACHE_MANAGE_TRANSIT	0x40000	/* manage transit from this dirent */
 #define DCACHE_MANAGED_DENTRY \
 	(DCACHE_MOUNTED|DCACHE_NEED_AUTOMOUNT|DCACHE_MANAGE_TRANSIT)
+#define DCACHE_LUSTRE_INVALID	0x4000000  /* Lustre invalidated */
 
 extern spinlock_t dcache_lock;
 extern seqlock_t rename_lock;

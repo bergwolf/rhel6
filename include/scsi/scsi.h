@@ -19,7 +19,7 @@ struct scsi_cmnd;
  * to SG_MAX_SINGLE_ALLOC to pack correctly at the highest order.  The
  * minimum value is 32
  */
-#define SCSI_MAX_SG_SEGMENTS	128
+#define SCSI_MAX_SG_SEGMENTS	256
 
 /*
  * Like SCSI_MAX_SG_SEGMENTS, but for archs that have sg chaining. This limit

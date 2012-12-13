@@ -280,6 +280,13 @@ int d_invalidate(struct dentry * dentry)
 		spin_unlock(&dcache_lock);
 		return 0;
 	}
+
+	/* network invalidation by Lustre */
+	if (dentry->d_flags & DCACHE_LUSTRE_INVALID) {
+		spin_unlock(&dcache_lock);
+		return 0;
+	}
+
 	/*
 	 * Check whether to do a partial shrink_dcache
 	 * to get rid of unused child entries.

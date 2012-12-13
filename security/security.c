@@ -61,6 +61,7 @@ int __init security_init(void)
 
 	return 0;
 }
+EXPORT_SYMBOL(security_inode_unlink);
 
 /* Save user chosen LSM */
 static int __init choose_lsm(char *str)

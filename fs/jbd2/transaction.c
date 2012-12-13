@@ -52,7 +52,9 @@ jbd2_get_transaction(journal_t *journal, transaction_t *transaction)
 	transaction->t_start_time = ktime_get();
 	transaction->t_tid = journal->j_transaction_sequence++;
 	transaction->t_expires = jiffies + journal->j_commit_interval;
+	INIT_LIST_HEAD(&transaction->t_jcb);
 	spin_lock_init(&transaction->t_handle_lock);
+	spin_lock_init(&transaction->t_jcb_lock);
 	INIT_LIST_HEAD(&transaction->t_inode_list);
 	INIT_LIST_HEAD(&transaction->t_private_list);
 
@@ -257,6 +259,7 @@ static handle_t *new_handle(int nblocks)
 	memset(handle, 0, sizeof(*handle));
 	handle->h_buffer_credits = nblocks;
 	handle->h_ref = 1;
+	INIT_LIST_HEAD(&handle->h_jcb);
 
 	lockdep_init_map(&handle->h_lockdep_map, "jbd2_handle",
 						&jbd2_handle_key, 0);
@@ -1219,6 +1222,36 @@ drop:
 }
 
 /**
+ * void jbd2_journal_callback_set() -  Register a callback function for this handle.
+ * @handle: handle to attach the callback to.
+ * @func: function to callback.
+ * @jcb:  structure with additional information required by func() , and
+ *	some space for jbd2 internal information.
+ *
+ * The function will be
+ * called when the transaction that this handle is part of has been
+ * committed to disk with the original callback data struct and the
+ * error status of the journal as parameters.  There is no guarantee of
+ * ordering between handles within a single transaction, nor between
+ * callbacks registered on the same handle.
+ *
+ * The caller is responsible for allocating the journal_callback struct.
+ * This is to allow the caller to add as much extra data to the callback
+ * as needed, but reduce the overhead of multiple allocations.  The caller
+ * allocated struct must start with a struct journal_callback at offset 0,
+ * and has the caller-specific data afterwards.
+ */
+void jbd2_journal_callback_set(handle_t *handle,
+		      void (*func)(struct journal_callback *jcb, int error),
+		      struct journal_callback *jcb)
+{
+	spin_lock(&handle->h_transaction->t_jcb_lock);
+	list_add_tail(&jcb->jcb_list, &handle->h_jcb);
+	spin_unlock(&handle->h_transaction->t_jcb_lock);
+	jcb->jcb_func = func;
+}
+
+/**
  * int jbd2_journal_stop() - complete a transaction
  * @handle: tranaction to complete.
  *
@@ -1322,6 +1355,11 @@ int jbd2_journal_stop(handle_t *handle)
 		if (journal->j_barrier_count)
 			wake_up(&journal->j_wait_transaction_locked);
 	}
+
+	/* Move callbacks from the handle to the transaction. */
+	spin_lock(&transaction->t_jcb_lock);
+	list_splice(&handle->h_jcb, &transaction->t_jcb);
+	spin_unlock(&transaction->t_jcb_lock);
 
 	/*
 	 * If the handle is marked SYNC, we need to set another commit

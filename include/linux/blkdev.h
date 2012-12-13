@@ -1028,9 +1028,9 @@ static inline int sb_issue_zeroout(struct super_block *sb, sector_t block,
 extern int blk_verify_command(unsigned char *cmd, fmode_t has_write_perm);
 
 enum blk_default_limits {
-	BLK_MAX_SEGMENTS	= 128,
+	BLK_MAX_SEGMENTS	= 256,
 	BLK_SAFE_MAX_SECTORS	= 255,
-	BLK_DEF_MAX_SECTORS	= 1024,
+	BLK_DEF_MAX_SECTORS	= 2048,
 	BLK_MAX_SEGMENT_SIZE	= 65536,
 	BLK_SEG_BOUNDARY_MASK	= 0xFFFFFFFFUL,
 };

@@ -2206,6 +2206,8 @@ static int add_stripe_bio(struct stripe_head *sh, struct bio *bi, int dd_idx, in
 		bi->bi_next = *bip;
 	*bip = bi;
 	bi->bi_phys_segments++;
+ 	if (bio_rw_flagged(bi, BIO_RW_SYNCIO) && !forwrite)
+ 		clear_bit(R5_UPTODATE, &sh->dev[dd_idx].flags); /* force to read from disk. */
 
 	if (forwrite) {
 		/* check if page is covered */
@@ -3914,6 +3916,9 @@ static int make_request(struct mddev *mddev, struct bio * bi)
 
 		bio_endio(bi, 0);
 	}
+
+	if (bio_rw_flagged(bi, BIO_RW_SYNCIO))
+		md_raid5_unplug_device(conf);
 
 	return 0;
 }
